@@ -6,6 +6,14 @@ using UnityEngine.UI;
 using UnityEngine.Assertions;
 
 public class CardScript : MonoBehaviour {
+	// Time it takes to fade out the card in seconds
+	public const float FadeOutTime = 0.75f;
+
+	// Time to wait before starting fadeout in seconds
+	public const float DelayBeforeFadeTime = 0.75f;
+	private const float shakeOriginalDecay = 0.002f;
+   	private const float shakeOriginalIntensity = 0.08f;
+
 	// Time to hover before showing full card
 	private const int hoverTimeBeforeShowingFullCardMS = 700;
 
@@ -20,6 +28,9 @@ public class CardScript : MonoBehaviour {
 
 	[SerializeField]
 	private GameManagerScript gameManager;
+
+	[SerializeField]
+	private DamageIndicator damageIndicatorScript;
 
 	[SerializeField]
 	private Transform selectionBorder;
@@ -226,32 +237,67 @@ public class CardScript : MonoBehaviour {
 
 	public void LoseHealth(int value) {
 		this.healthValue -= value;
-		this.ShowDamageBeingTaken(value);
+		this.damageIndicatorScript.ShowDamage(value);
 	}
 
-	public void PutInAttackLayer() {
+	public void OnAttackStarted() {
+		this.PutInAttackLayer();
+	}
+
+	public void CleanupCardOnAttackFinished() {
+		this.RemoveFromAttackLayer();
+		this.damageIndicatorScript.HideDamage();
+
+		if (this.healthValue <= 0) {
+			StartCoroutine(ShakeAndRemoveCardObject());
+		}
+	}
+
+	private IEnumerator ShakeAndRemoveCardObject() {
+		yield return new WaitForSeconds(CardScript.DelayBeforeFadeTime);
+
+		Vector2 originalPosition = transform.position;
+		float targetAlphaValue = 0f;
+		float originalAlpha = transform.GetComponent<SpriteRenderer>().material.color.a;
+
+		
+		float shakeDecay = CardScript.shakeOriginalDecay;
+   		float shakeIntensity = CardScript.shakeOriginalIntensity;
+
+
+		for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / CardScript.FadeOutTime) {
+			// Fade out the card
+			Color newColor = new Color(1, 1, 1, Mathf.Lerp(originalAlpha, targetAlphaValue, t));
+			transform.GetComponent<SpriteRenderer>().material.color = newColor;
+
+			// Shake the card
+			if (shakeIntensity > 0f) {
+				Vector2 newPosition = originalPosition;
+				Vector3 delta = UnityEngine.Random.insideUnitSphere * shakeIntensity;
+				newPosition.x += delta.x;
+				newPosition.y += delta.y;
+				transform.position = newPosition;
+				shakeIntensity -= shakeDecay;
+			}
+			yield return null;
+        }
+
+		// TODO: lindach: Add shaking and fading
+		Destroy(this.gameObject);
+	}
+
+	private void PutInAttackLayer() {
 		this.gameObject.layer = 1;
 		this.gameObject.GetComponent<Renderer>().sortingOrder = 1;
 		this.damageIndicator.GetComponent<Renderer>().sortingOrder = 2;
 		this.canvas.sortingOrder = 3;
 	}
 
-	public void RemoveFromAttackLayer() {
+	private void RemoveFromAttackLayer() {
 		this.gameObject.layer = 0;
 		this.gameObject.GetComponent<Renderer>().sortingOrder = 0;
 		this.damageIndicator.GetComponent<Renderer>().sortingOrder = 1;
 		this.canvas.sortingOrder = 2;
-	}
-
-	public void HideDamageBeingTaken() {
-		// TODO: lindach: Make damage fade out
-		this.damageIndicator.GetComponent<Renderer>().enabled = false;
-		this.damageValueDisplay.text = "";
-	}
-
-	private void ShowDamageBeingTaken(int damage) {
-		this.damageIndicator.GetComponent<Renderer>().enabled = true;
-		this.damageValueDisplay.text = "-" + damage;
 	}
 
 	private void closeFullCard() {

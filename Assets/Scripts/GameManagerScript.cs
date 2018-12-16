@@ -4,9 +4,6 @@ using UnityEngine;
 
 public class GameManagerScript : MonoBehaviour {
 
-	// Time in seconds to wait before cleaning up card after attack
-	private const float cardCleanupDelaySec = 0.75f;
-
 	GameObject attackingCard = null;
 	GameObject defendingCard = null;
 	CameraShakeScript camShakeScript;
@@ -71,8 +68,8 @@ public class GameManagerScript : MonoBehaviour {
 				this.defendingCard = cardClicked;
 
 				// Move cards clashing to attack layer
-				selecedPlayerCardScript.PutInAttackLayer();
-				cardClickedScript.PutInAttackLayer();
+				selecedPlayerCardScript.OnAttackStarted();
+				cardClickedScript.OnAttackStarted();
 			}
 		}
 	}
@@ -96,39 +93,16 @@ public class GameManagerScript : MonoBehaviour {
 	}
 
 	public void onAttackFinished() {
-		// Put cards back to default layer
+		// Clean up cards on attack finish
 		CardScript defendingCardScript = this.defendingCard.GetComponent<CardScript>();
-		defendingCardScript.RemoveFromAttackLayer();
+		defendingCardScript.CleanupCardOnAttackFinished();
 		
 		CardScript attackCardScript = this.attackingCard.GetComponent<CardScript>();
-		attackCardScript.RemoveFromAttackLayer();
-
-		// Do clean up of attack on delay
-		StartCoroutine(CleanUpAttackOnDelay(attackCardScript, defendingCardScript));
+		attackCardScript.CleanupCardOnAttackFinished();
 
 		// Attack has finished
 		this.defendingCard = null;
 		this.attackingCard = null;
-	}
-
-	private IEnumerator CleanUpAttackOnDelay(CardScript attackCardScript, CardScript defendingCardScript) {
-		yield return new WaitForSeconds(GameManagerScript.cardCleanupDelaySec);
-
-		// Hide damage taken on delay
-		defendingCardScript.HideDamageBeingTaken();
-		attackCardScript.HideDamageBeingTaken();
-
-		// TODO: lindach: Animate death
-		// Check if cards have been destroyed
-		if (attackCardScript.HealthValue <= 0) {
-			Destroy(attackCardScript.gameObject);
-		}
-
-		if (defendingCardScript.HealthValue <= 0) {
-			Destroy(defendingCardScript.gameObject);
-		}
-
-		
 	}
 
 	private void SelectPlayerCard(GameObject playerCard) {

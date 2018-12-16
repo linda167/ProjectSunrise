@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\CameraShakeScript.cs" />
     <Compile Include="Assets\Scripts\CardScript.cs" />
+    <Compile Include="Assets\Scripts\DamageIndicator.cs" />
     <Compile Include="Assets\Scripts\GameManagerScript.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>C:/Linda/Side Projects/Project Sunrise/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>

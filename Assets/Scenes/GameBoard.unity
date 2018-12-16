@@ -399,6 +399,11 @@ Prefab:
       propertyPath: m_Name
       value: Card1
       objectReference: {fileID: 0}
+    - target: {fileID: 212422435612441938, guid: 89a318dad8734d94c8bfa300a3ee5d1d,
+        type: 2}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 89a318dad8734d94c8bfa300a3ee5d1d, type: 2}
   m_IsPrefabAsset: 0
