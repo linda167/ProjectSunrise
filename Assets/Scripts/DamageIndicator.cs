@@ -10,9 +10,19 @@ public class DamageIndicator : MonoBehaviour {
 	[SerializeField]
 	private Text damageText;
 
+	private Coroutine currentFadeOutCoroutine = null;
+
+	private Color originalTextColor;
+	private Color originalBackgroundColor;
+
+	private bool IsShowingDamage {
+		get { return this.damageText.text != ""; }
+	}
+
 	// Use this for initialization
 	void Start () {
-		
+		this.originalTextColor = this.damageText.color;
+		this.originalBackgroundColor = transform.GetComponent<SpriteRenderer>().material.color;
 	}
 	
 	// Update is called once per frame
@@ -20,19 +30,23 @@ public class DamageIndicator : MonoBehaviour {
 	}
 
 	public void ShowDamage(int damage) {
+		// Cancel current fade out if one is going on
+		if (this.currentFadeOutCoroutine != null) {
+			StopCoroutine(this.currentFadeOutCoroutine);
+			this.ResetDamageIndicatorRender();
+		}
+
 		this.damageBackground.GetComponent<Renderer>().enabled = true;
 		this.damageText.text = "-" + damage;
 	}
 
 	public void HideDamage() {
 		// Make damage fade out over time
-		StartCoroutine(this.FadeOutDamageBackground(0, CardScript.FadeOutTime));
+		this.currentFadeOutCoroutine = StartCoroutine(this.FadeOutDamageBackground(0, CardScript.FadeOutTime));
 	}
 
 	private IEnumerator FadeOutDamageBackground(float targetAlphaValue, float fadeOutTime) {
 		Transform backgroundTransform = this.damageBackground.transform;
-		Color originalTextColor = this.damageText.color;
-		Color originalBackgroundColor = transform.GetComponent<SpriteRenderer>().material.color;
 
 		// Wait a bit before fading
 		yield return new WaitForSeconds(CardScript.DelayBeforeFadeTime);
@@ -45,14 +59,19 @@ public class DamageIndicator : MonoBehaviour {
 			yield return null;
         }
 
-		// Animation done, hide renderer entirely
+		// Animation done, reset render
+		this.ResetDamageIndicatorRender();
+     }
+
+	 private void ResetDamageIndicatorRender() {
+		 // Renderer hidden by default
 		this.damageBackground.GetComponent<Renderer>().enabled = false;
 		
 		// Restore original color
-		backgroundTransform.GetComponent<SpriteRenderer>().material.color = originalBackgroundColor;
+		this.damageBackground.transform.GetComponent<SpriteRenderer>().material.color = originalBackgroundColor;
 		this.damageText.color = originalTextColor;
 
 		// Remove text display
 		this.damageText.text = "";
-     }
+	 }
 }

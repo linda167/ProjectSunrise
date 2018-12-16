@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManagerScript : MonoBehaviour {
+	[SerializeField] 
+	private GameObject cardPrefab;
+
+	private const float distanceBetweenShipsX = 0.6f;
+	private float cardWidth;
 
 	GameObject attackingCard = null;
 	GameObject defendingCard = null;
@@ -22,6 +27,9 @@ public class GameManagerScript : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		this.camShakeScript = GetComponent<CameraShakeScript>();
+		this.cardWidth = this.cardPrefab.transform.GetComponent<Renderer>().bounds.size.x;;
+
+		this.InitializeBoard();
 	}
 	
 	// Update is called once per frame
@@ -103,6 +111,36 @@ public class GameManagerScript : MonoBehaviour {
 		// Attack has finished
 		this.defendingCard = null;
 		this.attackingCard = null;
+	}
+
+	private void InitializeBoard() {
+		// Randomly generate ships for now
+		float friendlyRow1PosY = -2.65f;
+		float enemyRow1PosY = 3.5f;
+
+		this.AddRowOfShips(friendlyRow1PosY, false /* isEnemyPlayer */);
+		this.AddRowOfShips(enemyRow1PosY, true /* isEnemyPlayer */);
+	}
+
+	private void AddRowOfShips(float yPos, bool isEnemyPlayer) {
+		// Generate 1-7 ships
+		int shipCount = UnityEngine.Random.Range(1,8);
+
+		float totalWidth = shipCount * this.cardWidth + (shipCount - 1) * GameManagerScript.distanceBetweenShipsX;
+		float shipPositionX = (float)(-1 * (totalWidth / 2.0) + 0.5 * this.cardWidth);
+		
+		for (int i = 0; i < shipCount; i++) {
+			GameObject card = InstantiateCardPrefab(shipPositionX, yPos, isEnemyPlayer);
+			shipPositionX += this.cardWidth + GameManagerScript.distanceBetweenShipsX;
+		}
+	}
+
+	private GameObject InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer) {
+		GameObject card = Instantiate(cardPrefab, new Vector2(xPos,yPos), Quaternion.identity);
+		CardScript cardScript = card.GetComponent<CardScript>();
+		cardScript.gameManager = this;
+		cardScript.isEnemyPlayer = isEnemyPlayer;
+		return card;
 	}
 
 	private void SelectPlayerCard(GameObject playerCard) {

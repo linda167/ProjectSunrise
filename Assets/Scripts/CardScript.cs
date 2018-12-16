@@ -21,13 +21,16 @@ public class CardScript : MonoBehaviour {
 	private const int showFullCardAnimationTimeMS = 150;
 
 	
-	private const float cardMoveSpeed = 11f;
+	private const float cardMoveSpeed = 12f;
 
 	// Initial scale to set the full card for animation
 	private Vector3 showFullCardAnimationInitialScale = new Vector3(0.75f, 0.75f, 0.75f);
 
 	[SerializeField]
-	private GameManagerScript gameManager;
+	public GameManagerScript gameManager;
+
+	[SerializeField]
+	public bool isEnemyPlayer;
 
 	[SerializeField]
 	private DamageIndicator damageIndicatorScript;
@@ -53,9 +56,6 @@ public class CardScript : MonoBehaviour {
 	[SerializeField]
 	private GameObject damageIndicator;
 
-	[SerializeField]
-	private bool isEnemyPlayer;
-
 	// Current attack and health value
 	private int attackValue;
 	private int healthValue;
@@ -72,6 +72,8 @@ public class CardScript : MonoBehaviour {
 	
 	// Time when we started showing the full card
 	private DateTime fullCardShowStartTime;
+
+	private bool isBeingDestroyed = false;
 
 	public bool IsSelected {
 		get { return this.isSelected; }
@@ -172,6 +174,10 @@ public class CardScript : MonoBehaviour {
 	}
 
 	void OnMouseDown() {
+		if (this.isBeingDestroyed) {
+			return;
+		}
+		
 		this.gameManager.OnCardClicked(this.gameObject);
     }
 
@@ -254,6 +260,8 @@ public class CardScript : MonoBehaviour {
 	}
 
 	private IEnumerator ShakeAndRemoveCardObject() {
+		this.isBeingDestroyed = true;
+	
 		yield return new WaitForSeconds(CardScript.DelayBeforeFadeTime);
 
 		Vector2 originalPosition = transform.position;
@@ -282,7 +290,7 @@ public class CardScript : MonoBehaviour {
 			yield return null;
         }
 
-		// TODO: lindach: Add shaking and fading
+		// Destroy object after shaking / fading is done
 		Destroy(this.gameObject);
 	}
 
