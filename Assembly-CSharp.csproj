@@ -61,7 +61,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\CardSpriteScript.cs" />
     <Compile Include="Assets\Scripts\CameraShakeScript.cs" />
     <Compile Include="Assets\Scripts\CardScript.cs" />
     <Compile Include="Assets\Scripts\DamageIndicator.cs" />

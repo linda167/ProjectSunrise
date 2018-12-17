@@ -126,7 +126,7 @@ public class CardScript : MonoBehaviour {
 		this.UpdateFullCardDisplay();
 
 		// Make sure rotation is straight
-		this.cardSprite.transform.rotation = Quaternion.identity;
+		this.transform.rotation = Quaternion.identity;
 
 		// Update attack and health values
 		attackValueDisplay.text = attackValue.ToString();
@@ -175,7 +175,7 @@ public class CardScript : MonoBehaviour {
 		}
 	}
 
-	public void OnMouseDown() {
+	void OnMouseDown() {
 		if (this.isBeingDestroyed) {
 			return;
 		}
@@ -183,11 +183,11 @@ public class CardScript : MonoBehaviour {
 		this.gameManager.OnCardClicked(this.gameObject);
     }
 
-	public void OnMouseEnter() {
+	void OnMouseEnter() {
 		this.mouseEnterTime = DateTime.Now;
 	}
 
-	public void OnMouseOver() {
+	void OnMouseOver() {
 		if (!this.IsFullCardShown &&
 			!(this.gameManager.IsPlayersTurn &&
 			this.gameManager.IsAttackInProgress) &&
@@ -199,7 +199,7 @@ public class CardScript : MonoBehaviour {
 		}
 	}
 
-	public void OnMouseExit() {
+	void OnMouseExit() {
 		this.mouseEnterTime = default(DateTime);
 		this.closeFullCard();
     }
