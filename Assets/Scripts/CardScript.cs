@@ -28,6 +28,8 @@ public class CardScript : MonoBehaviour {
 
 	[SerializeField]
 	public GameManagerScript gameManager;
+	[SerializeField]
+	public GameObject cardSprite;
 
 	[SerializeField]
 	public bool isEnemyPlayer;
@@ -112,7 +114,7 @@ public class CardScript : MonoBehaviour {
 			Destroy(GetComponent<Rigidbody2D>());
 		}
 
-		this.originalPosition = this.transform.position;
+		this.originalPosition = this.cardSprite.transform.position;
 	}
 	
 	// Update is called once per frame
@@ -124,7 +126,7 @@ public class CardScript : MonoBehaviour {
 		this.UpdateFullCardDisplay();
 
 		// Make sure rotation is straight
-		this.transform.rotation = Quaternion.identity;
+		this.cardSprite.transform.rotation = Quaternion.identity;
 
 		// Update attack and health values
 		attackValueDisplay.text = attackValue.ToString();
@@ -173,19 +175,19 @@ public class CardScript : MonoBehaviour {
 		}
 	}
 
-	void OnMouseDown() {
+	public void OnMouseDown() {
 		if (this.isBeingDestroyed) {
 			return;
 		}
-		
+
 		this.gameManager.OnCardClicked(this.gameObject);
     }
 
-	void OnMouseEnter() {
+	public void OnMouseEnter() {
 		this.mouseEnterTime = DateTime.Now;
 	}
 
-	void OnMouseOver() {
+	public void OnMouseOver() {
 		if (!this.IsFullCardShown &&
 			!(this.gameManager.IsPlayersTurn &&
 			this.gameManager.IsAttackInProgress) &&
@@ -197,7 +199,7 @@ public class CardScript : MonoBehaviour {
 		}
 	}
 
-	void OnMouseExit() {
+	public void OnMouseExit() {
 		this.mouseEnterTime = default(DateTime);
 		this.closeFullCard();
     }
@@ -234,7 +236,7 @@ public class CardScript : MonoBehaviour {
 	}
 
 	public void MoveTowardsCard(CardScript cardToAttack) {
-		this.targetPosition = cardToAttack.transform.position;
+		this.targetPosition = cardToAttack.cardSprite.transform.position;
 	}
 
 	public void MoveBackToOriginalPosition() {
@@ -264,9 +266,9 @@ public class CardScript : MonoBehaviour {
 	
 		yield return new WaitForSeconds(CardScript.DelayBeforeFadeTime);
 
-		Vector2 originalPosition = transform.position;
+		Vector2 originalPosition = this.cardSprite.transform.position;
 		float targetAlphaValue = 0f;
-		float originalAlpha = transform.GetComponent<SpriteRenderer>().material.color.a;
+		float originalAlpha = this.cardSprite.GetComponent<SpriteRenderer>().material.color.a;
 
 		
 		float shakeDecay = CardScript.shakeOriginalDecay;
@@ -276,7 +278,7 @@ public class CardScript : MonoBehaviour {
 		for (float t = 0.0f; t < 1.0f; t += Time.deltaTime / CardScript.FadeOutTime) {
 			// Fade out the card
 			Color newColor = new Color(1, 1, 1, Mathf.Lerp(originalAlpha, targetAlphaValue, t));
-			transform.GetComponent<SpriteRenderer>().material.color = newColor;
+			this.cardSprite.GetComponent<SpriteRenderer>().material.color = newColor;
 
 			// Shake the card
 			if (shakeIntensity > 0f) {
@@ -284,7 +286,7 @@ public class CardScript : MonoBehaviour {
 				Vector3 delta = UnityEngine.Random.insideUnitSphere * shakeIntensity;
 				newPosition.x += delta.x;
 				newPosition.y += delta.y;
-				transform.position = newPosition;
+				this.cardSprite.transform.position = newPosition;
 				shakeIntensity -= shakeDecay;
 			}
 			yield return null;
@@ -296,14 +298,14 @@ public class CardScript : MonoBehaviour {
 
 	private void PutInAttackLayer() {
 		this.gameObject.layer = 1;
-		this.gameObject.GetComponent<Renderer>().sortingOrder = 1;
+		this.cardSprite.GetComponent<Renderer>().sortingOrder = 1;
 		this.damageIndicator.GetComponent<Renderer>().sortingOrder = 2;
 		this.canvas.sortingOrder = 3;
 	}
 
 	private void RemoveFromAttackLayer() {
 		this.gameObject.layer = 0;
-		this.gameObject.GetComponent<Renderer>().sortingOrder = 0;
+		this.cardSprite.GetComponent<Renderer>().sortingOrder = 0;
 		this.damageIndicator.GetComponent<Renderer>().sortingOrder = 1;
 		this.canvas.sortingOrder = 2;
 	}
