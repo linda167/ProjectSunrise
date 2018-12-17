@@ -6,7 +6,7 @@ public class GameManagerScript : MonoBehaviour {
 	[SerializeField] 
 	private GameObject cardPrefab;
 
-	private const float distanceBetweenShipsX = 0.6f;
+	private const float distanceBetweenShipsX = 0.2f;
 	private float cardWidth;
 
 	GameObject attackingCard = null;
@@ -15,6 +15,11 @@ public class GameManagerScript : MonoBehaviour {
 	
 	// Currently always player's turn
 	private bool isPlayersTurn = true;
+
+	private int playerFrontCards = 0;
+	private int playerBackCards = 0;
+	private int enemyFrontCards = 0;
+	private int enemyBackCards = 0;
 
 	public bool IsPlayersTurn {
 		get { return this.isPlayersTurn; }
@@ -71,7 +76,13 @@ public class GameManagerScript : MonoBehaviour {
 				this.UnselectPlayerCard(this.attackingCard);
 				this.SelectPlayerCard(cardClicked);
 			} else {
-				// We're clicking on enemy card, attack
+				// We're clicking on enemy card
+				// Check that we're not attacking back row while enemy has a front line
+				if (!cardClickedScript.isFrontRow && this.enemyFrontCards > 0) {
+					return;
+				}
+
+				// Attack enemy
 				selecedPlayerCardScript.MoveTowardsCard(cardClickedScript);
 				this.defendingCard = cardClicked;
 
@@ -113,16 +124,32 @@ public class GameManagerScript : MonoBehaviour {
 		this.attackingCard = null;
 	}
 
-	private void InitializeBoard() {
-		// Randomly generate ships for now
-		float friendlyRow1PosY = -2.65f;
-		float enemyRow1PosY = 3.5f;
-
-		this.AddRowOfShips(friendlyRow1PosY, false /* isEnemyPlayer */);
-		this.AddRowOfShips(enemyRow1PosY, true /* isEnemyPlayer */);
+	public void onCardDestroyed(CardScript cardScript) {
+		if (!cardScript.isEnemyPlayer && cardScript.isFrontRow) {
+			this.playerFrontCards--;
+		} else if (!cardScript.isEnemyPlayer && !cardScript.isFrontRow) {
+			this.playerBackCards--;
+		} else if (cardScript.isEnemyPlayer && cardScript.isFrontRow) {
+			this.enemyFrontCards--;
+		} else if (cardScript.isEnemyPlayer && !cardScript.isFrontRow) {
+			this.enemyBackCards--;
+		}
 	}
 
-	private void AddRowOfShips(float yPos, bool isEnemyPlayer) {
+	private void InitializeBoard() {
+		// Randomly generate ships for now
+		float friendlyRow1PosY = -1.2f;
+		float friendlyRow2PosY = -3.0f;
+		float enemyRow1PosY = 1.2f;
+		float enemyRow2PosY = 3.0f;
+
+		this.AddRowOfShips(friendlyRow1PosY, false /* isEnemyPlayer */, true /* isFrontRow */);
+		this.AddRowOfShips(friendlyRow2PosY, false /* isEnemyPlayer */, false /* isFrontRow */);
+		this.AddRowOfShips(enemyRow1PosY, true /* isEnemyPlayer */, true /* isFrontRow */);
+		this.AddRowOfShips(enemyRow2PosY, true /* isEnemyPlayer */, false /* isFrontRow */);
+	}
+
+	private void AddRowOfShips(float yPos, bool isEnemyPlayer, bool isFrontRow) {
 		// Generate 1-7 ships
 		int shipCount = UnityEngine.Random.Range(1,8);
 
@@ -130,16 +157,28 @@ public class GameManagerScript : MonoBehaviour {
 		float shipPositionX = (float)(-1 * (totalWidth / 2.0) + 0.5 * this.cardWidth);
 		
 		for (int i = 0; i < shipCount; i++) {
-			GameObject card = InstantiateCardPrefab(shipPositionX, yPos, isEnemyPlayer);
+			GameObject card = InstantiateCardPrefab(shipPositionX, yPos, isEnemyPlayer, isFrontRow);
 			shipPositionX += this.cardWidth + GameManagerScript.distanceBetweenShipsX;
 		}
 	}
 
-	private GameObject InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer) {
+	private GameObject InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer, bool isFrontRow) {
 		GameObject card = Instantiate(cardPrefab, new Vector2(xPos,yPos), Quaternion.identity);
 		CardScript cardScript = card.GetComponent<CardScript>();
 		cardScript.gameManager = this;
 		cardScript.isEnemyPlayer = isEnemyPlayer;
+		cardScript.isFrontRow = isFrontRow;
+
+		if (!isEnemyPlayer && isFrontRow) {
+			this.playerFrontCards++;
+		} else if (!isEnemyPlayer && !isFrontRow) {
+			this.playerBackCards++;
+		} else if (isEnemyPlayer && isFrontRow) {
+			this.enemyFrontCards++;
+		} else if (isEnemyPlayer && !isFrontRow) {
+			this.enemyBackCards++;
+		}
+
 		return card;
 	}
 

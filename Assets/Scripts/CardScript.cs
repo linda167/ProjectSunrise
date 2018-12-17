@@ -33,6 +33,8 @@ public class CardScript : MonoBehaviour {
 
 	[SerializeField]
 	public bool isEnemyPlayer;
+	[SerializeField]
+	public bool isFrontRow;
 
 	[SerializeField]
 	private DamageIndicator damageIndicatorScript;
@@ -262,6 +264,8 @@ public class CardScript : MonoBehaviour {
 	}
 
 	private IEnumerator ShakeAndRemoveCardObject() {
+		this.gameManager.onCardDestroyed(this);
+
 		this.isBeingDestroyed = true;
 	
 		yield return new WaitForSeconds(CardScript.DelayBeforeFadeTime);
@@ -279,6 +283,8 @@ public class CardScript : MonoBehaviour {
 			// Fade out the card
 			Color newColor = new Color(1, 1, 1, Mathf.Lerp(originalAlpha, targetAlphaValue, t));
 			this.cardSprite.GetComponent<SpriteRenderer>().material.color = newColor;
+			this.attackValueDisplay.color = newColor;
+			this.healthValueDisplay.color = newColor;
 
 			// Shake the card
 			if (shakeIntensity > 0f) {
