@@ -109,7 +109,7 @@ public class CardScript : MonoBehaviour {
 		selectionBorder.GetComponent<Renderer>().enabled = false;
 
 		// Set full card to be the highest sorting layer
-		this.fullCard.GetComponent<Renderer>().sortingOrder = 10;
+		this.fullCard.GetComponent<Renderer>().sortingOrder = 100;
 
 		if (this.isEnemyPlayer) {
 			// Enemy cards don't move for now

@@ -6,7 +6,7 @@ public class GameManagerScript : MonoBehaviour {
 	[SerializeField] 
 	private GameObject cardPrefab;
 
-	private const float distanceBetweenShipsX = 0.2f;
+	private const float distanceBetweenShipsX = -0.1f;
 	private float cardWidth;
 
 	GameObject attackingCard = null;
@@ -138,10 +138,10 @@ public class GameManagerScript : MonoBehaviour {
 
 	private void InitializeBoard() {
 		// Randomly generate ships for now
-		float friendlyRow1PosY = -1.2f;
-		float friendlyRow2PosY = -3.0f;
-		float enemyRow1PosY = 1.2f;
-		float enemyRow2PosY = 3.0f;
+		float friendlyRow1PosY = -1.0f;
+		float friendlyRow2PosY = -2.6f;
+		float enemyRow1PosY = 1.0f;
+		float enemyRow2PosY = 2.6f;
 
 		this.AddRowOfShips(friendlyRow1PosY, false /* isEnemyPlayer */, true /* isFrontRow */);
 		this.AddRowOfShips(friendlyRow2PosY, false /* isEnemyPlayer */, false /* isFrontRow */);
@@ -157,7 +157,7 @@ public class GameManagerScript : MonoBehaviour {
 		float shipPositionX = (float)(-1 * (totalWidth / 2.0) + 0.5 * this.cardWidth);
 		
 		for (int i = 0; i < shipCount; i++) {
-			GameObject card = InstantiateCardPrefab(shipPositionX, yPos, isEnemyPlayer, isFrontRow);
+			InstantiateCardPrefab(shipPositionX, yPos, isEnemyPlayer, isFrontRow);
 			shipPositionX += this.cardWidth + GameManagerScript.distanceBetweenShipsX;
 		}
 	}
