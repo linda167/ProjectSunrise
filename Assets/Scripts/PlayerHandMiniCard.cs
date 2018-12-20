@@ -6,9 +6,14 @@ public class PlayerHandMiniCard : MonoBehaviour {
 
 	[SerializeField]
 	private PlayerHandScript playerHandCardScript;
+	private const float animateDownTotalTimeSec = 1.7f;
+	private const float animateDownTotalDistance = 0.2f;
+	private Vector3 originalPosition;
+	private Coroutine animateShiftDownCoroutine = null;
 
 	// Use this for initialization
 	void Start () {
+		this.originalPosition = this.GetComponent<Renderer>().transform.position;
 	}
 	
 	// Update is called once per frame
@@ -21,4 +26,20 @@ public class PlayerHandMiniCard : MonoBehaviour {
 		this.GetComponent<Renderer>().enabled = false;
 		this.playerHandCardScript.ShowFullCard();
     }
+
+	public void Show() {
+		this.GetComponent<Renderer>().enabled = true;
+
+		Vector3 shiftedtUpPosition = new Vector3(
+			originalPosition.x,
+			originalPosition.y + PlayerHandMiniCard.animateDownTotalDistance,
+			originalPosition.z);
+		this.transform.position = shiftedtUpPosition;
+
+		this.animateShiftDownCoroutine = StartCoroutine(
+			CommonUtils.MoveTowardsTargetOverTime(
+				this.transform,
+				PlayerHandMiniCard.animateDownTotalTimeSec,
+				originalPosition));
+	}
 }

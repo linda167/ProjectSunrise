@@ -14,6 +14,7 @@ public class PlayerHandScript : MonoBehaviour {
 	private PlayerHandFullCard fullCardScript;
 
 	// Use this for initialization
+	// TODO: lindach: This class isn't necessary
 	void Start () {
 		this.miniCardScript = this.miniCard.GetComponent<PlayerHandMiniCard>();
 		this.fullCardScript = this.fullCard.GetComponent<PlayerHandFullCard>();
@@ -25,24 +26,11 @@ public class PlayerHandScript : MonoBehaviour {
 	}
 
 	public void ShowFullCard() {
-		// Show full card, make sure it's straight
-		this.fullCard.transform.rotation = Quaternion.identity;
-		this.fullCard.GetComponent<Renderer>().enabled = true;
-
-		// Put full card at the front most z so it can receive mouse events
-		Transform fullCardTransform = this.fullCard.GetComponent<Renderer>().transform;
-		fullCardTransform.position = new Vector3(fullCardTransform.position.x, fullCardTransform.position.y, -2);
+		// Show full card
+		this.fullCardScript.Show();
     }
 
-	public void HideFullCard() {
-		this.fullCard.GetComponent<Renderer>().enabled = false;
-
-		// Restore original z position
-		Transform fullCardTransform = this.fullCard.GetComponent<Renderer>().transform;
-		fullCardTransform.position = new Vector3(fullCardTransform.position.x, fullCardTransform.position.y, 0);
-	}
-
 	public void ShowMiniCard() {
-		this.miniCard.GetComponent<Renderer>().enabled = true;
+		this.miniCardScript.Show();
     }
 }

@@ -15,7 +15,7 @@ public class CardScript : MonoBehaviour {
    	private const float shakeOriginalIntensity = 0.08f;
 
 	// Time to hover before showing full card
-	private const int hoverTimeBeforeShowingFullCardMS = 700;
+	private const int hoverTimeBeforeShowingFullCardMS = 500;
 
 	// Time to animate showing full card
 	private const int showFullCardAnimationTimeMS = 150;
