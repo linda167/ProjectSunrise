@@ -19,7 +19,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4787526459945892}
-  - component: {fileID: 114175218157172666}
   m_Layer: 0
   m_Name: PlayerHandCard
   m_TagString: Untagged
@@ -83,7 +82,7 @@ Transform:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1910280122915396}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.2, z: 0}
+  m_LocalPosition: {x: 0, y: 1.075, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 4787526459945892}
@@ -165,20 +164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b803b7e9cc56a34f907655640ed6cc4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerHandCardScript: {fileID: 114175218157172666}
---- !u!114 &114175218157172666
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1431067304249226}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0917dc5004bbb3a4d9c8de1343cf1640, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  fullCard: {fileID: 1910280122915396}
-  miniCard: {fileID: 1844395029974428}
+  miniCardScript: {fileID: 114307871640419966}
 --- !u!114 &114307871640419966
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -190,7 +176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4de5003ad1bdeb4a8943556a899339f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerHandCardScript: {fileID: 114175218157172666}
+  fullCardScript: {fileID: 114097010165135076}
 --- !u!212 &212958691820220642
 SpriteRenderer:
   m_ObjectHideFlags: 1

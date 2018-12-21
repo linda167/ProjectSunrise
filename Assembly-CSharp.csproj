@@ -68,7 +68,6 @@
     <Compile Include="Assets\Scripts\GameManagerScript.cs" />
     <Compile Include="Assets\Scripts\PlayerHandFullCard.cs" />
     <Compile Include="Assets\Scripts\PlayerHandMiniCard.cs" />
-    <Compile Include="Assets\Scripts\PlayerHandScript.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>C:/Linda/Side Projects/Project Sunrise/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>

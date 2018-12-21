@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerHandMiniCard : MonoBehaviour {
-
 	[SerializeField]
-	private PlayerHandScript playerHandCardScript;
+	private PlayerHandFullCard fullCardScript;
 	private const float animateDownTotalTimeSec = 1.7f;
 	private const float animateDownTotalDistance = 0.2f;
 	private Vector3 originalPosition;
@@ -23,12 +22,13 @@ public class PlayerHandMiniCard : MonoBehaviour {
 
 	void OnMouseEnter() {
 		Debug.Log("PlayerHandMiniScard.OnMouseEnter called");
-		this.GetComponent<Renderer>().enabled = false;
-		this.playerHandCardScript.ShowFullCard();
+		this.Hide();
+		this.fullCardScript.Show();
     }
 
 	public void Show() {
 		this.GetComponent<Renderer>().enabled = true;
+		this.GetComponent<BoxCollider2D>().enabled = true;
 
 		Vector3 shiftedtUpPosition = new Vector3(
 			originalPosition.x,
@@ -41,5 +41,14 @@ public class PlayerHandMiniCard : MonoBehaviour {
 				this.transform,
 				PlayerHandMiniCard.animateDownTotalTimeSec,
 				originalPosition));
+	}
+
+	public void Hide() {
+		this.GetComponent<Renderer>().enabled = false;
+		this.GetComponent<BoxCollider2D>().enabled = false;
+		this.transform.position = this.originalPosition;
+		if (this.animateShiftDownCoroutine != null) {
+			StopCoroutine(this.animateShiftDownCoroutine);
+		}
 	}
 }

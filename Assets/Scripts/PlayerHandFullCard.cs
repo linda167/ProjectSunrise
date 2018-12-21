@@ -1,14 +1,17 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerHandFullCard : MonoBehaviour {
 	[SerializeField]
-	private PlayerHandScript playerHandCardScript;	
+	private PlayerHandMiniCard miniCardScript;
 	private const float animateUpTotalTimeSec = 1.25f;
 	private const float animateUpTotalDistance = 0.1f;
 	private Coroutine animateShiftUpCoroutine = null;
 	private Vector3 originalPosition;
+	private bool isHovered = false;
+	private DateTime lastShownTime;
 
 	// Use this for initialization
 	void Start () {
@@ -17,16 +20,27 @@ public class PlayerHandFullCard : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		
+		if (DateTime.Now.Subtract(this.lastShownTime).TotalMilliseconds > 100 &&
+			!this.isHovered &&
+			this.GetComponent<Renderer>().enabled) {
+			// Hide full card if no longer hovered
+			this.HideFullCardShowMiniCard();
+		}		
 	}
+
+	void OnMouseEnter() {
+		this.isHovered = true;
+    }
 
 	void OnMouseExit() {
 		Debug.Log("PlayerHandFullCard.OnMouseExitCalled");
-		this.Hide();
-		this.playerHandCardScript.ShowMiniCard();
+		this.isHovered = false;
+		this.HideFullCardShowMiniCard();
     }
 
 	public void Show() {
+		this.lastShownTime = DateTime.Now;
+
 		// Make sure card is straight
 		this.transform.rotation = Quaternion.identity;
 		this.GetComponent<Renderer>().enabled = true;
@@ -46,6 +60,11 @@ public class PlayerHandFullCard : MonoBehaviour {
 				this.transform,
 				PlayerHandFullCard.animateUpTotalTimeSec,
 				shiftUpPosition));
+	}
+
+	private void HideFullCardShowMiniCard() {
+		this.Hide();
+		this.miniCardScript.Show();
 	}
 
 	private void Hide() {

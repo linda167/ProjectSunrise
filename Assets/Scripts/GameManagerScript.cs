@@ -5,6 +5,8 @@ using UnityEngine;
 public class GameManagerScript : MonoBehaviour {
 	[SerializeField] 
 	private GameObject cardPrefab;
+	[SerializeField] 
+	private GameObject playerHandCardPrefab;
 
 	private const float distanceBetweenShipsX = -0.1f;
 	private float cardWidth;
@@ -137,6 +139,82 @@ public class GameManagerScript : MonoBehaviour {
 	}
 
 	private void InitializeBoard() {
+		this.InitializePlayerHand();
+		this.InitializeBoardShips();
+	}
+
+	private void InitializePlayerHand() {
+		// Generate 1-7 cards
+		int cardCount = UnityEngine.Random.Range(1,8);
+
+		// Calculate left most card x position
+		const float xDelta = 1f;
+		float xPos = (float)(-1 * xDelta * (cardCount - 1) / 2.0);
+
+		// Calculate left most card y position
+		const float yBaseLine = -4.64f;
+		const float yDelta = 0.05f;
+		float yPos = (float)(yBaseLine - (cardCount - 1) / 2.0 * yDelta);
+
+		// Calculate left most rotation
+		const float zRotationDelta = -0.035f;
+		float rotationZ = (float)((cardCount - 1) / 2.0 * -1 * zRotationDelta);
+
+		for (int i = 0; i < cardCount; i++) {
+			// Adjust y position
+			float distanceFromCenter = Mathf.Ceil(Mathf.Abs((float)((cardCount - 1) / 2.0 - i)));
+			float yAdjust = 0;
+			if (distanceFromCenter == 1) {
+				if (cardCount >= 7) {
+					yAdjust = 0.02f;
+				}
+				else if (cardCount >= 5) {
+					yAdjust = 0.01f;
+				}
+			} else if (distanceFromCenter == 2) {
+				if (cardCount == 4) {
+					yAdjust = -0.02f;
+				}
+				else if (cardCount == 5) {
+					yAdjust = -0.06f;				
+				}
+				else if (cardCount == 6) {
+					yAdjust = -0.03f;				
+				}
+				else if (cardCount == 7) {
+					yAdjust = -0.03f;				
+				}
+			} else if (distanceFromCenter == 3) {
+				if (cardCount >= 7) {
+					yAdjust = -0.16f;
+				} else {
+					yAdjust = -0.14f;
+				}
+			}
+
+			Vector3 position = new Vector3(xPos, yPos + yAdjust, 0);
+			Quaternion rotation = new Quaternion(0, 0, rotationZ, 1);
+			GameObject playerHandCard = InstantiatePlayerHandCardPrefab(position, rotation, i /* sortingOrder */);
+
+			// Calculate new positions
+			xPos += xDelta;
+			rotationZ += zRotationDelta;
+			if (i + 1< cardCount / 2.0) {
+				yPos += yDelta;
+			} else if (i + 1> cardCount / 2.0) {
+				yPos -= yDelta;
+			}
+		}
+	}
+
+	private GameObject InstantiatePlayerHandCardPrefab(Vector3 position, Quaternion rotation, int sortingOrder) {
+		GameObject playerHandCard = Instantiate(this.playerHandCardPrefab, position, rotation);
+		GameObject miniCard = playerHandCard.transform.GetChild(1).gameObject;
+		miniCard.GetComponent<Renderer>().sortingOrder = sortingOrder;
+		return playerHandCard;
+	}
+
+	private void InitializeBoardShips() {
 		// Randomly generate ships for now
 		float friendlyRow1PosY = -1.0f;
 		float friendlyRow2PosY = -2.6f;
@@ -163,7 +241,7 @@ public class GameManagerScript : MonoBehaviour {
 	}
 
 	private GameObject InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer, bool isFrontRow) {
-		GameObject card = Instantiate(cardPrefab, new Vector2(xPos,yPos), Quaternion.identity);
+		GameObject card = Instantiate(this.cardPrefab, new Vector2(xPos,yPos), Quaternion.identity);
 		CardScript cardScript = card.GetComponent<CardScript>();
 		cardScript.gameManager = this;
 		cardScript.isEnemyPlayer = isEnemyPlayer;
