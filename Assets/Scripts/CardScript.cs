@@ -5,6 +5,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Assertions;
 
+public enum CardState {
+	None,
+	AttackingTowardsEnemy,
+	ReturningFromAttack,
+	ShiftingHorizontally,
+	BeingDestroyed,
+	IsDestroyed
+}
+
 public class CardScript : MonoBehaviour {
 	// Time it takes to fade out the card in seconds
 	public const float FadeOutTime = 0.75f;
@@ -20,8 +29,8 @@ public class CardScript : MonoBehaviour {
 	// Time to animate showing full card
 	private const int showFullCardAnimationTimeMS = 150;
 
-	
-	private const float cardMoveSpeed = 12f;
+	private const float cardAttackTime = 0.5f;
+	private CardState cardState = CardState.None;
 
 	// Initial scale to set the full card for animation
 	private Vector3 showFullCardAnimationInitialScale = new Vector3(0.75f, 0.75f, 0.75f);
@@ -71,13 +80,11 @@ public class CardScript : MonoBehaviour {
 	private DateTime mouseEnterTime;
 
 	private Vector2 originalPosition;
-
-	private Vector2 targetPosition = Vector2.zero;
 	
 	// Time when we started showing the full card
 	private DateTime fullCardShowStartTime;
 
-	private bool isBeingDestroyed = false;
+	private Coroutine currentMoveToCoroutine = null;
 
 	public bool IsSelected {
 		get { return this.isSelected; }
@@ -121,9 +128,6 @@ public class CardScript : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		// Update movement if we're moving towards target
-		this.UpdateMoveTowardsTarget();
-
 		// Update whether to show full card
 		this.UpdateFullCardDisplay();
 
@@ -133,24 +137,6 @@ public class CardScript : MonoBehaviour {
 		// Update attack and health values
 		attackValueDisplay.text = attackValue.ToString();
 		healthValueDisplay.text = healthValue.ToString();
-	}
-
-	private void UpdateMoveTowardsTarget() {
-		// We're in the process of moving towards a target position
-		if (this.targetPosition != Vector2.zero) {
-			float step = cardMoveSpeed * Time.deltaTime;
-			this.transform.position = Vector2.MoveTowards(this.transform.position, this.targetPosition, step);
-
-			// We've reached our destination
-			if (this.transform.position.Equals(this.targetPosition)) {
-				this.targetPosition = Vector2.zero;
-
-				// If we've returned to original position, reset layer to default
-				if (this.transform.position.Equals(this.originalPosition))  {
-					this.gameManager.onAttackFinished();
-				}
-			}
-		}
 	}
 
 	private void UpdateFullCardDisplay() {
@@ -178,7 +164,7 @@ public class CardScript : MonoBehaviour {
 	}
 
 	void OnMouseDown() {
-		if (this.isBeingDestroyed) {
+		if (this.cardState == CardState.BeingDestroyed) {
 			return;
 		}
 
@@ -237,12 +223,49 @@ public class CardScript : MonoBehaviour {
         selectionBorder.GetComponent<Renderer>().enabled = false;
 	}
 
-	public void MoveTowardsCard(CardScript cardToAttack) {
-		this.targetPosition = cardToAttack.cardSprite.transform.position;
+	public void MoveHorizontally(Vector2 position) {		
+		this.ChangeStateTo(CardState.ShiftingHorizontally);
+		this.currentMoveToCoroutine = StartCoroutine(
+			CommonUtils.MoveTowardsTargetOverTime(
+				this.transform,
+				CardScript.cardAttackTime,
+				position,
+				delegate() {
+					this.ChangeStateTo(CardState.None);
+				}));
+		
+		// Save position as new original position
+		this.originalPosition = position;
+	}
+
+	public void MoveToAttackTarget(Vector2 position) {
+		this.ChangeStateTo(CardState.AttackingTowardsEnemy);
+		this.currentMoveToCoroutine = StartCoroutine(
+			CommonUtils.MoveTowardsTargetOverTime(
+				this.transform,
+				CardScript.cardAttackTime,
+				position,
+				delegate() {
+					this.ChangeStateTo(CardState.ReturningFromAttack);
+				}));
 	}
 
 	public void MoveBackToOriginalPosition() {
-		this.targetPosition = originalPosition;
+		this.ChangeStateTo(CardState.ReturningFromAttack);
+
+		if (this.currentMoveToCoroutine != null) {
+			StopCoroutine(this.currentMoveToCoroutine);
+		}
+
+		this.currentMoveToCoroutine = StartCoroutine(
+			CommonUtils.MoveTowardsTargetOverTime(
+				this.transform,
+				CardScript.cardAttackTime,
+				originalPosition,
+				delegate() {
+					this.ChangeStateTo(CardState.None);
+					this.gameManager.onAttackFinished();
+				}));
 	}
 
 	public void LoseHealth(int value) {
@@ -264,9 +287,7 @@ public class CardScript : MonoBehaviour {
 	}
 
 	private IEnumerator ShakeAndRemoveCardObject() {
-		this.gameManager.onCardDestroyed(this);
-
-		this.isBeingDestroyed = true;
+		this.ChangeStateTo(CardState.BeingDestroyed);
 	
 		yield return new WaitForSeconds(CardScript.DelayBeforeFadeTime);
 
@@ -300,6 +321,8 @@ public class CardScript : MonoBehaviour {
 
 		// Destroy object after shaking / fading is done
 		Destroy(this.gameObject);
+		this.ChangeStateTo(CardState.IsDestroyed);
+		this.gameManager.onCardDestroyed(this);
 	}
 
 	private void PutInAttackLayer() {
@@ -327,5 +350,23 @@ public class CardScript : MonoBehaviour {
 		this.fullCard.GetComponent<Renderer>().enabled = true;
 		this.fullCard.transform.localScale = this.showFullCardAnimationInitialScale;
 		this.fullCardShowStartTime = DateTime.Now;
+	}
+
+	private void ChangeStateTo(CardState newState) {
+		// Handle destruction states
+		if (newState == CardState.BeingDestroyed) {
+			this.gameManager.AddCardToMovedOrDestroyed(this);
+		} else if (newState == CardState.IsDestroyed) {
+			this.gameManager.RemoveCardFromMovedOrDestroyed(this);
+		}
+
+		// Handle horizontal move states
+		if (newState == CardState.ShiftingHorizontally) {
+			this.gameManager.AddCardToMovedOrDestroyed(this);
+		} else if (newState == CardState.None && this.cardState == CardState.ShiftingHorizontally) {
+			this.gameManager.RemoveCardFromMovedOrDestroyed(this);
+		}
+
+		this.cardState = newState;
 	}
 }

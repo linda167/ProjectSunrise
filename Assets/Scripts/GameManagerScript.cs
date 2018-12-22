@@ -18,10 +18,8 @@ public class GameManagerScript : MonoBehaviour {
 	// Currently always player's turn
 	private bool isPlayersTurn = true;
 
-	private int playerFrontCards = 0;
-	private int playerBackCards = 0;
-	private int enemyFrontCards = 0;
-	private int enemyBackCards = 0;
+	private List<CardScript> boardUnits = new List<CardScript>();
+	private List<CardScript> cardsBeingMovedOrDestroyed = new List<CardScript>();
 
 	public bool IsPlayersTurn {
 		get { return this.isPlayersTurn; }
@@ -45,7 +43,7 @@ public class GameManagerScript : MonoBehaviour {
 	}
 
 	public void OnCardClicked(GameObject cardClicked) {
-		if (this.defendingCard != null) {
+		if (this.IsAttackInProgress) {
 			// Current attack going on
 			return;
 		}
@@ -79,13 +77,20 @@ public class GameManagerScript : MonoBehaviour {
 				this.SelectPlayerCard(cardClicked);
 			} else {
 				// We're clicking on enemy card
+
+				// Do not allow attack if cards are still being destroyed or moved from previous attack
+				if (this.cardsBeingMovedOrDestroyed.Count > 0) {
+					return;
+				}
+
 				// Check that we're not attacking back row while enemy has a front line
-				if (!cardClickedScript.isFrontRow && this.enemyFrontCards > 0) {
+				int enemyFrontCards = this.GetShipCountForRow(true /* isEnemyPlayer */, true /* isFrontRow */);
+				if (!cardClickedScript.isFrontRow && enemyFrontCards > 0) {
 					return;
 				}
 
 				// Attack enemy
-				selecedPlayerCardScript.MoveTowardsCard(cardClickedScript);
+				selecedPlayerCardScript.MoveToAttackTarget(cardClickedScript.cardSprite.transform.position);
 				this.defendingCard = cardClicked;
 
 				// Move cards clashing to attack layer
@@ -127,15 +132,23 @@ public class GameManagerScript : MonoBehaviour {
 	}
 
 	public void onCardDestroyed(CardScript cardScript) {
-		if (!cardScript.isEnemyPlayer && cardScript.isFrontRow) {
-			this.playerFrontCards--;
-		} else if (!cardScript.isEnemyPlayer && !cardScript.isFrontRow) {
-			this.playerBackCards--;
-		} else if (cardScript.isEnemyPlayer && cardScript.isFrontRow) {
-			this.enemyFrontCards--;
-		} else if (cardScript.isEnemyPlayer && !cardScript.isFrontRow) {
-			this.enemyBackCards--;
+		this.boardUnits.Remove(cardScript);
+
+		// Move rest of ships to account for removed space
+		List<CardScript> shipList = this.GetShipsForRow(cardScript.isEnemyPlayer, cardScript.isFrontRow);
+		List<Vector2> shipPositions = this.GetShipPositionsForRow(cardScript.isEnemyPlayer, cardScript.isFrontRow, shipList.Count);	
+		for (int i = 0; i < shipList.Count; i++) {
+			CardScript ship = shipList[i];
+			ship.MoveHorizontally(shipPositions[i]);
 		}
+	}
+
+	public void AddCardToMovedOrDestroyed(CardScript cardScript) {
+		this.cardsBeingMovedOrDestroyed.Add(cardScript);
+	}
+
+	public void RemoveCardFromMovedOrDestroyed(CardScript cardScript) {
+		this.cardsBeingMovedOrDestroyed.Remove(cardScript);
 	}
 
 	private void InitializeBoard() {
@@ -216,28 +229,47 @@ public class GameManagerScript : MonoBehaviour {
 
 	private void InitializeBoardShips() {
 		// Randomly generate ships for now
-		float friendlyRow1PosY = -1.0f;
-		float friendlyRow2PosY = -2.6f;
-		float enemyRow1PosY = 1.0f;
-		float enemyRow2PosY = 2.6f;
-
-		this.AddRowOfShips(friendlyRow1PosY, false /* isEnemyPlayer */, true /* isFrontRow */);
-		this.AddRowOfShips(friendlyRow2PosY, false /* isEnemyPlayer */, false /* isFrontRow */);
-		this.AddRowOfShips(enemyRow1PosY, true /* isEnemyPlayer */, true /* isFrontRow */);
-		this.AddRowOfShips(enemyRow2PosY, true /* isEnemyPlayer */, false /* isFrontRow */);
+		this.AddRowOfShips(false /* isEnemyPlayer */, true /* isFrontRow */);
+		this.AddRowOfShips(false /* isEnemyPlayer */, false /* isFrontRow */);
+		this.AddRowOfShips(true /* isEnemyPlayer */, true /* isFrontRow */);
+		this.AddRowOfShips(true /* isEnemyPlayer */, false /* isFrontRow */);
 	}
 
-	private void AddRowOfShips(float yPos, bool isEnemyPlayer, bool isFrontRow) {
+	private void AddRowOfShips(bool isEnemyPlayer, bool isFrontRow) {
 		// Generate 1-7 ships
 		int shipCount = UnityEngine.Random.Range(1,8);
 
+		List<Vector2> shipPositions = this.GetShipPositionsForRow(isEnemyPlayer, isFrontRow, shipCount);		
+		for (int i = 0; i < shipCount; i++) {
+			InstantiateCardPrefab(shipPositions[i].x, shipPositions[i].y, isEnemyPlayer, isFrontRow);
+		}
+	}
+
+	private List<Vector2> GetShipPositionsForRow(bool isEnemyPlayer, bool isFrontRow, int shipCount) {
+		List<Vector2> positionList = new List<Vector2>();
+		float yPos = this.GetShipYPosition(isEnemyPlayer, isFrontRow);
 		float totalWidth = shipCount * this.cardWidth + (shipCount - 1) * GameManagerScript.distanceBetweenShipsX;
 		float shipPositionX = (float)(-1 * (totalWidth / 2.0) + 0.5 * this.cardWidth);
-		
 		for (int i = 0; i < shipCount; i++) {
-			InstantiateCardPrefab(shipPositionX, yPos, isEnemyPlayer, isFrontRow);
+			positionList.Add(new Vector2(shipPositionX, yPos));
 			shipPositionX += this.cardWidth + GameManagerScript.distanceBetweenShipsX;
 		}
+
+		return positionList;
+	}
+
+	private float GetShipYPosition(bool isEnemyPlayer, bool isFrontRow) {
+		if (isEnemyPlayer && isFrontRow) {
+			return 1.0f;
+		} else if (isEnemyPlayer && !isFrontRow) {
+			return 2.6f;
+		} else if (!isEnemyPlayer && isFrontRow) {
+			return -1.0f;
+		} else if (!isEnemyPlayer && !isFrontRow) {
+			return -2.6f;
+		}
+
+		return 0;
 	}
 
 	private GameObject InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer, bool isFrontRow) {
@@ -246,16 +278,7 @@ public class GameManagerScript : MonoBehaviour {
 		cardScript.gameManager = this;
 		cardScript.isEnemyPlayer = isEnemyPlayer;
 		cardScript.isFrontRow = isFrontRow;
-
-		if (!isEnemyPlayer && isFrontRow) {
-			this.playerFrontCards++;
-		} else if (!isEnemyPlayer && !isFrontRow) {
-			this.playerBackCards++;
-		} else if (isEnemyPlayer && isFrontRow) {
-			this.enemyFrontCards++;
-		} else if (isEnemyPlayer && !isFrontRow) {
-			this.enemyBackCards++;
-		}
+		this.boardUnits.Add(cardScript);
 
 		return card;
 	}
@@ -267,5 +290,20 @@ public class GameManagerScript : MonoBehaviour {
 
 	private void UnselectPlayerCard(GameObject playerCard) {
 		playerCard.GetComponent<CardScript>().UnselectCard();
+	}
+
+	private int GetShipCountForRow(bool isEnemyPlayer, bool isFrontRow) {
+		return this.GetShipsForRow(isEnemyPlayer, isFrontRow).Count;
+	}
+
+	private List<CardScript> GetShipsForRow(bool isEnemyPlayer, bool isFrontRow) {
+		List<CardScript> shipsList = new List<CardScript>();
+		for (int i=0; i<this.boardUnits.Count; i++) {
+			CardScript card = this.boardUnits[i];
+			if (card.isEnemyPlayer == isEnemyPlayer && card.isFrontRow == isFrontRow) {
+				shipsList.Add(card);
+			}
+		}
+		return shipsList;
 	}
 }
