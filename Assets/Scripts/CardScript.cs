@@ -14,7 +14,7 @@ public enum CardState {
 	IsDestroyed
 }
 
-public class CardScript : MonoBehaviour {
+public class CardScript : MonoBehaviour, IBoardUnit {
 	// Time it takes to fade out the card in seconds
 	public const float FadeOutTime = 0.75f;
 
@@ -29,7 +29,7 @@ public class CardScript : MonoBehaviour {
 	// Time to animate showing full card
 	private const int showFullCardAnimationTimeMS = 150;
 
-	private const float cardAttackTime = 0.5f;
+	private const float cardAttackTime = 0.7f;
 	private CardState cardState = CardState.None;
 
 	// Initial scale to set the full card for animation
@@ -86,12 +86,24 @@ public class CardScript : MonoBehaviour {
 
 	private Coroutine currentMoveToCoroutine = null;
 
+	private Vector2 queuedNextMovePosition = default(Vector2);
+
+	private Vector2 currentMoveToPosition = default(Vector2);
+
 	public bool IsSelected {
 		get { return this.isSelected; }
 	}
 
 	public bool IsEnemyPlayer {
 		get { return this.isEnemyPlayer; }
+	}
+
+	public bool IsFrontRow {
+		get { return this.isFrontRow; }
+	}
+
+	public bool IsTempSpaceholder {
+		get { return false; }
 	}
 
 	public int AttackValue {
@@ -143,7 +155,7 @@ public class CardScript : MonoBehaviour {
 		// If attack in progress, close full card
 		if (this.gameManager.IsPlayersTurn &&
 			this.gameManager.IsAttackInProgress) {
-			this.closeFullCard();
+			this.CloseFullCard();
 		}
 
 		// Animate showing full card
@@ -183,13 +195,13 @@ public class CardScript : MonoBehaviour {
 			DateTime.Now.Subtract(this.mouseEnterTime).TotalMilliseconds > hoverTimeBeforeShowingFullCardMS) {
 			
 			// Show full card on long hover
-			this.startShowFullCard();
+			this.StartShowFullCard();
 		}
 	}
 
 	void OnMouseExit() {
 		this.mouseEnterTime = default(DateTime);
-		this.closeFullCard();
+		this.CloseFullCard();
     }
 
 	void OnCollisionEnter2D(Collision2D other) {
@@ -224,15 +236,34 @@ public class CardScript : MonoBehaviour {
 	}
 
 	public void MoveHorizontally(Vector2 position) {		
+		if (this.cardState == CardState.ShiftingHorizontally && position.Equals(this.currentMoveToPosition)) {
+			// We're already moving to the same place, noop
+			return;
+		}
+
+		if (this.cardState == CardState.None && this.transform.position.Equals(position)) {
+			// We're not moving right now and we want to move to where we're already at, noop
+			return;
+		}
+
+		if (this.cardState == CardState.ShiftingHorizontally) {
+			// Cancel current horizontal move
+			StopCoroutine(this.currentMoveToCoroutine);
+		}
+
 		this.ChangeStateTo(CardState.ShiftingHorizontally);
-		this.currentMoveToCoroutine = StartCoroutine(
-			CommonUtils.MoveTowardsTargetOverTime(
-				this.transform,
-				CardScript.cardAttackTime,
-				position,
-				delegate() {
-					this.ChangeStateTo(CardState.None);
-				}));
+		this.MoveToPositionOverTime(
+			position,
+			CardScript.cardAttackTime,
+			delegate() {
+				this.ChangeStateTo(CardState.None);
+
+				// Move to queued position
+				if (!this.queuedNextMovePosition.Equals(default(Vector2))) {
+					this.MoveHorizontally(this.queuedNextMovePosition);
+					this.queuedNextMovePosition = default(Vector2);
+				}
+			});
 		
 		// Save position as new original position
 		this.originalPosition = position;
@@ -240,14 +271,12 @@ public class CardScript : MonoBehaviour {
 
 	public void MoveToAttackTarget(Vector2 position) {
 		this.ChangeStateTo(CardState.AttackingTowardsEnemy);
-		this.currentMoveToCoroutine = StartCoroutine(
-			CommonUtils.MoveTowardsTargetOverTime(
-				this.transform,
-				CardScript.cardAttackTime,
-				position,
-				delegate() {
-					this.ChangeStateTo(CardState.ReturningFromAttack);
-				}));
+		this.MoveToPositionOverTime(
+			position,
+			CardScript.cardAttackTime,
+			delegate() {
+				this.ChangeStateTo(CardState.ReturningFromAttack);
+			});
 	}
 
 	public void MoveBackToOriginalPosition() {
@@ -257,15 +286,13 @@ public class CardScript : MonoBehaviour {
 			StopCoroutine(this.currentMoveToCoroutine);
 		}
 
-		this.currentMoveToCoroutine = StartCoroutine(
-			CommonUtils.MoveTowardsTargetOverTime(
-				this.transform,
-				CardScript.cardAttackTime,
-				originalPosition,
-				delegate() {
-					this.ChangeStateTo(CardState.None);
-					this.gameManager.onAttackFinished();
-				}));
+		this.MoveToPositionOverTime(
+			originalPosition,
+			CardScript.cardAttackTime,
+			delegate() {
+				this.ChangeStateTo(CardState.None);
+				this.gameManager.onAttackFinished();
+			});
 	}
 
 	public void LoseHealth(int value) {
@@ -284,6 +311,18 @@ public class CardScript : MonoBehaviour {
 		if (this.healthValue <= 0) {
 			StartCoroutine(ShakeAndRemoveCardObject());
 		}
+	}
+
+	private void MoveToPositionOverTime(Vector2 targetPosition, float totalTime, System.Action callback) {
+		this.currentMoveToPosition = targetPosition;
+		this.currentMoveToCoroutine = StartCoroutine(CommonUtils.MoveTowardsTargetOverTime(
+			this.transform,
+			totalTime,
+			targetPosition,
+			delegate() {
+				this.currentMoveToPosition = default(Vector2);
+				callback();
+			}));
 	}
 
 	private IEnumerator ShakeAndRemoveCardObject() {
@@ -339,13 +378,13 @@ public class CardScript : MonoBehaviour {
 		this.canvas.sortingOrder = 2;
 	}
 
-	private void closeFullCard() {
+	private void CloseFullCard() {
 		Debug.Log("Closing fulll card");
 		this.fullCard.GetComponent<Renderer>().enabled = false;
 		this.fullCardShowStartTime = default(DateTime);
 	}
 
-	private void startShowFullCard() {
+	private void StartShowFullCard() {
 		Debug.Log("Start showing full card");
 		this.fullCard.GetComponent<Renderer>().enabled = true;
 		this.fullCard.transform.localScale = this.showFullCardAnimationInitialScale;

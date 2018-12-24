@@ -5,12 +5,15 @@ using UnityEngine;
 
 public class PlayerHandFullCard : MonoBehaviour {
 	[SerializeField]
+	public GameManagerScript gameManager;
+	[SerializeField]
 	private PlayerHandMiniCard miniCardScript;
 	private const float animateUpTotalTimeSec = 1.25f;
 	private const float animateUpTotalDistance = 0.1f;
 	private Coroutine animateShiftUpCoroutine = null;
 	private Vector3 originalPosition;
 	private bool isHovered = false;
+	private bool isDraggingCard = false;
 	private DateTime lastShownTime;
 
 	// Use this for initialization
@@ -20,12 +23,19 @@ public class PlayerHandFullCard : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (DateTime.Now.Subtract(this.lastShownTime).TotalMilliseconds > 100 &&
+		if (this.isDraggingCard) {
+			// Move full card with mouse cursor
+			Vector2 cursorPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			this.transform.position = cursorPosition;
+			this.gameManager.OnDropOverCard(this, cursorPosition);
+		}
+		else if (DateTime.Now.Subtract(this.lastShownTime).TotalMilliseconds > 100 &&
 			!this.isHovered &&
 			this.GetComponent<Renderer>().enabled) {
 			// Hide full card if no longer hovered
+			Debug.Log("Hiding full card because no longer hovered");
 			this.HideFullCardShowMiniCard();
-		}		
+		}
 	}
 
 	void OnMouseEnter() {
@@ -33,10 +43,30 @@ public class PlayerHandFullCard : MonoBehaviour {
     }
 
 	void OnMouseExit() {
-		Debug.Log("PlayerHandFullCard.OnMouseExitCalled");
-		this.isHovered = false;
-		this.HideFullCardShowMiniCard();
+		if (!isDraggingCard) {
+			Debug.Log("PlayerHandFullCard.OnMouseExitCalled");
+			this.isHovered = false;
+			this.HideFullCardShowMiniCard();
+		}
     }
+
+	void OnMouseDown() {
+		Debug.Log("PlayerHandFullCard OnMouseDown");
+		this.isDraggingCard = true;
+
+		if (this.animateShiftUpCoroutine != null) {
+			// Stop any animation
+			StopCoroutine(this.animateShiftUpCoroutine);
+		}
+	}
+
+	void OnMouseUp() {
+		Debug.Log("PlayerHandFullCard OnMouseUp");
+		this.isDraggingCard = false;
+
+		Vector2 cursorPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		this.gameManager.OnDropCard(this, cursorPosition);
+	}
 
 	public void Show() {
 		this.lastShownTime = DateTime.Now;
@@ -68,6 +98,7 @@ public class PlayerHandFullCard : MonoBehaviour {
 	}
 
 	private void Hide() {
+		Debug.Log("PlayerHandFullCard.Hide called");
 		this.GetComponent<Renderer>().enabled = false;
 		this.GetComponent<BoxCollider2D>().enabled = false;
 

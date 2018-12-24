@@ -66,6 +66,8 @@
     <Compile Include="Assets\Scripts\CommonUtils.cs" />
     <Compile Include="Assets\Scripts\DamageIndicator.cs" />
     <Compile Include="Assets\Scripts\GameManagerScript.cs" />
+    <Compile Include="Assets\Scripts\IBoardUnit.cs" />
+    <Compile Include="Assets\Scripts\PlaceholderBoardUnit.cs" />
     <Compile Include="Assets\Scripts\PlayerHandFullCard.cs" />
     <Compile Include="Assets\Scripts\PlayerHandMiniCard.cs" />
     <Reference Include="UnityEditor.StandardEvents">
