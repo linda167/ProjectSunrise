@@ -5,6 +5,8 @@ using UnityEngine;
 public class PlayerHandMiniCard : MonoBehaviour {
 	[SerializeField]
 	private PlayerHandFullCard fullCardScript;
+	[SerializeField]
+	public GameManagerScript gameManager;
 	private const float animateDownTotalTimeSec = 1.7f;
 	private const float animateDownTotalDistance = 0.2f;
 	private Vector3 originalPosition;
@@ -22,8 +24,11 @@ public class PlayerHandMiniCard : MonoBehaviour {
 
 	void OnMouseEnter() {
 		Debug.Log("PlayerHandMiniScard.OnMouseEnter called");
-		this.Hide();
-		this.fullCardScript.Show();
+
+		if (!this.gameManager.IsCardFromHandBeingDragged) {
+			this.Hide();
+			this.fullCardScript.Show();
+		}
     }
 
 	public void Show() {

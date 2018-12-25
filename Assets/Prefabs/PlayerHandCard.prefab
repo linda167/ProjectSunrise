@@ -164,7 +164,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b803b7e9cc56a34f907655640ed6cc4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameManager: {fileID: 0}
   miniCardScript: {fileID: 114307871640419966}
+  playerHandCard: {fileID: 1431067304249226}
 --- !u!114 &114307871640419966
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -177,6 +179,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fullCardScript: {fileID: 114097010165135076}
+  gameManager: {fileID: 0}
 --- !u!212 &212958691820220642
 SpriteRenderer:
   m_ObjectHideFlags: 1

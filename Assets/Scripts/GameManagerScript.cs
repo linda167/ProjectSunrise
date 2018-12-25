@@ -19,6 +19,7 @@ public class GameManagerScript : MonoBehaviour {
 	
 	// Currently always player's turn
 	private bool isPlayersTurn = true;
+	private bool isCardFromHandBeingDragged = false;
 
 	private List<IBoardUnit> boardUnits = new List<IBoardUnit>();
 	private List<CardScript> cardsBeingMovedOrDestroyed = new List<CardScript>();
@@ -31,6 +32,11 @@ public class GameManagerScript : MonoBehaviour {
 
 	public bool IsAttackInProgress {
 		get { return this.defendingCard != null; }
+	}
+
+	public bool IsCardFromHandBeingDragged {
+		get { return this.isCardFromHandBeingDragged; }
+		set { this.isCardFromHandBeingDragged = value; }
 	}
 
 	// Use this for initialization
@@ -158,18 +164,39 @@ public class GameManagerScript : MonoBehaviour {
 		Debug.Log("Removing existing placeholder, count=: " + this.boardUnits.Count);
 
 		if (dropRow > 0) {
-			this.tempDropOverCard.IsFrontRow = dropRow == 1;
-			int colPosition = this.GetColPositionFromDropPosition(dropPosition, false /* isEnemyPlayer */, this.tempDropOverCard.IsFrontRow);
-			this.InsertBoardUnitAtIndex(colPosition, this.tempDropOverCard);
+			this.AddDropOverPlaceHolderAtPosition(dropPosition, dropRow == 1 /* isFrontRow */);
 		}
 
 		// Move units accordingly
 		this.RerenderPlayerRows();
 	}
 
+	private PlaceholderBoardUnit AddDropOverPlaceHolderAtPosition(Vector2 dropPosition, bool isFrontRow) {
+		this.tempDropOverCard.IsFrontRow = isFrontRow;
+		int colPosition = this.GetColPositionFromDropPosition(dropPosition, false /* isEnemyPlayer */, this.tempDropOverCard.IsFrontRow);
+		this.InsertBoardUnitAtIndex(colPosition, this.tempDropOverCard);
+
+		return this.tempDropOverCard;
+	}
+
+
 	public void OnDropCard(PlayerHandFullCard fullCard, Vector2 dropPosition) {
 		this.boardUnits.Remove(this.tempDropOverCard);
 		int dropRow = this.GetRowPositionFromDropPosition(dropPosition);
+
+		if (dropRow == 0) {
+			// Return card to hand if not dropped on board
+			fullCard.HideFullCardShowMiniCard();
+		} else {
+			// Replace placeholder with real unit when rendering
+			PlaceholderBoardUnit placeHolderUnit = this.AddDropOverPlaceHolderAtPosition(dropPosition, dropRow == 1);
+			placeHolderUnit.ShouldReplaceWithRealUnit = true;
+
+			// Remove card from hand
+			fullCard.RemovePlayerHandCard();
+		}
+
+		// Move units accordingly
 		this.RerenderPlayerRows();
 	}
 
@@ -191,8 +218,22 @@ public class GameManagerScript : MonoBehaviour {
 			IBoardUnit unit = unitsList[i];
 			if (!unit.IsTempSpaceholder) {
 				((CardScript)unit).MoveHorizontally(unitPositions[i]);
+			} else {
+				PlaceholderBoardUnit placeHolder = (PlaceholderBoardUnit)unit;
+				if (placeHolder.ShouldReplaceWithRealUnit) {
+					InsertNewUnitOnBoard(placeHolder, unitPositions[i]);
+				}
 			}
 		}
+	}
+
+	private void InsertNewUnitOnBoard(PlaceholderBoardUnit placeHolder, Vector2 position) {
+		CardScript cardScript = InstantiateCardPrefab(position.x, position.y, false /* isEnemyPlayer */, placeHolder.IsFrontRow);
+
+		// Replace unit in boardUnits
+		int index = this.boardUnits.IndexOf(placeHolder);
+		this.boardUnits[index] = cardScript;
+		placeHolder.ShouldReplaceWithRealUnit = false;
 	}
 
 	private void InitializePlayerHand() {
@@ -262,7 +303,9 @@ public class GameManagerScript : MonoBehaviour {
 	private GameObject InstantiatePlayerHandCardPrefab(Vector3 position, Quaternion rotation, int sortingOrder) {
 		GameObject playerHandCard = Instantiate(this.playerHandCardPrefab, position, rotation);
 		GameObject miniCard = playerHandCard.transform.GetChild(1).gameObject;
+		PlayerHandMiniCard miniCardScript = miniCard.GetComponent<PlayerHandMiniCard>();
 		miniCard.GetComponent<Renderer>().sortingOrder = sortingOrder;
+		miniCardScript.gameManager = this;
 
 		GameObject fullCard = playerHandCard.transform.GetChild(0).gameObject;
 		PlayerHandFullCard fullCardScript = fullCard.GetComponent<PlayerHandFullCard>();
@@ -285,7 +328,8 @@ public class GameManagerScript : MonoBehaviour {
 
 		List<Vector2> shipPositions = this.GetUnitPositionsForRow(isEnemyPlayer, isFrontRow, shipCount);		
 		for (int i = 0; i < shipCount; i++) {
-			InstantiateCardPrefab(shipPositions[i].x, shipPositions[i].y, isEnemyPlayer, isFrontRow);
+			CardScript cardScript = InstantiateCardPrefab(shipPositions[i].x, shipPositions[i].y, isEnemyPlayer, isFrontRow);
+			this.boardUnits.Add(cardScript);
 		}
 	}
 
@@ -376,15 +420,14 @@ public class GameManagerScript : MonoBehaviour {
 		}
 	}
 
-	private GameObject InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer, bool isFrontRow) {
+	private CardScript InstantiateCardPrefab(float xPos, float yPos, bool isEnemyPlayer, bool isFrontRow) {
 		GameObject card = Instantiate(this.cardPrefab, new Vector2(xPos,yPos), Quaternion.identity);
 		CardScript cardScript = card.GetComponent<CardScript>();
 		cardScript.gameManager = this;
 		cardScript.isEnemyPlayer = isEnemyPlayer;
 		cardScript.isFrontRow = isFrontRow;
-		this.boardUnits.Add(cardScript);
 
-		return card;
+		return cardScript;
 	}
 
 	private void SelectPlayerCard(GameObject playerCard) {

@@ -392,6 +392,10 @@ public class CardScript : MonoBehaviour, IBoardUnit {
 	}
 
 	private void ChangeStateTo(CardState newState) {
+		if (newState == this.cardState) {
+			return;
+		}
+
 		// Handle destruction states
 		if (newState == CardState.BeingDestroyed) {
 			this.gameManager.AddCardToMovedOrDestroyed(this);

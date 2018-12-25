@@ -8,6 +8,8 @@ public class PlayerHandFullCard : MonoBehaviour {
 	public GameManagerScript gameManager;
 	[SerializeField]
 	private PlayerHandMiniCard miniCardScript;
+	[SerializeField]
+	public GameObject playerHandCard;
 	private const float animateUpTotalTimeSec = 1.25f;
 	private const float animateUpTotalDistance = 0.1f;
 	private Coroutine animateShiftUpCoroutine = null;
@@ -53,6 +55,7 @@ public class PlayerHandFullCard : MonoBehaviour {
 	void OnMouseDown() {
 		Debug.Log("PlayerHandFullCard OnMouseDown");
 		this.isDraggingCard = true;
+		this.gameManager.IsCardFromHandBeingDragged = true;
 
 		if (this.animateShiftUpCoroutine != null) {
 			// Stop any animation
@@ -63,6 +66,7 @@ public class PlayerHandFullCard : MonoBehaviour {
 	void OnMouseUp() {
 		Debug.Log("PlayerHandFullCard OnMouseUp");
 		this.isDraggingCard = false;
+		this.gameManager.IsCardFromHandBeingDragged = false;
 
 		Vector2 cursorPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		this.gameManager.OnDropCard(this, cursorPosition);
@@ -92,9 +96,14 @@ public class PlayerHandFullCard : MonoBehaviour {
 				shiftUpPosition));
 	}
 
-	private void HideFullCardShowMiniCard() {
+	public void HideFullCardShowMiniCard() {
 		this.Hide();
 		this.miniCardScript.Show();
+	}
+
+	public void RemovePlayerHandCard() {
+		// Remove the entire player hand card
+		Destroy(this.playerHandCard);
 	}
 
 	private void Hide() {
